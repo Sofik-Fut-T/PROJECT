@@ -1,0 +1,121 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &6235577420826667772
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5293018043229152205, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_Name
+      value: HunterArcher Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7075474739617899129, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8011990348373038640, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8011990348373038640, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 8011990348373038640, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5293018043229152205, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7724568061487359924}
+    - targetCorrespondingSourceObject: {fileID: 5293018043229152205, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9072108665600054732}
+  m_SourcePrefab: {fileID: 100100000, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+--- !u!1 &2305187140087695665 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5293018043229152205, guid: f569ba18f20f10748af948498cfbeaa9, type: 3}
+  m_PrefabInstance: {fileID: 6235577420826667772}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7724568061487359924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2305187140087695665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 0
+  _assetId: 2712386699
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &9072108665600054732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2305187140087695665}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91ee180d47952234da7f7720b2157cc7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HunterController
+  syncMethod: 0
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  currentNodeId: -1
+  role: 2
+  hunterIndex: 0
+  specialCooldown: 1
+  currentNodeTransform: {fileID: 0}
+  localPlayerIndicatorPrefab: {fileID: 873769703394827672, guid: 3a17170b426f97342b47b1037169d16d, type: 3}

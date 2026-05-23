@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 565009320683163283}
   - component: {fileID: 1938792417638601463}
   - component: {fileID: -749144895569935935}
+  - component: {fileID: 2481136402652069986}
   m_Layer: 6
   m_Name: Plate
   m_TagString: Untagged
@@ -202,3 +203,16 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+--- !u!114 &2481136402652069986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4908692804594639469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2db596dcb197b547987fddbb3ecd414, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridCell
+  coords: {x: 0, y: 0}

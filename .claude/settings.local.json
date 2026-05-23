@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\MyFiles\\\\Programs\\\\unity\\\\projects\\\\PROJECT\\\\Assets\" -Recurse -Force)",
+      "Bash(Select-Object -Property FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(Out-String)",
+      "Bash(grep -E \"\\\\.\\(json|yaml|yml|xml|config\\)$\")"
+    ]
+  }
+}
