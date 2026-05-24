@@ -14,10 +14,11 @@ public class HuntNetworkManager : NetworkManager
     public GameObject hunterArcherPrefab;
 
     [Header("Scenes")]
-    public string gameSceneName = "GameScene";   // назва сцени гри в Build Settings
+    public string gameSceneName = "GameScene";
+    public string menuSceneName = "MenuScene";
 
     [Header("Game Settings")]
-    public int maxRounds = 12;
+    public int maxRounds = 15;
 
     private readonly List<NetworkPlayer> _players = new();
 
@@ -43,34 +44,61 @@ public class HuntNetworkManager : NetworkManager
         }
         else
         {
-            // Перше підключення — лобі (гравці можуть змінити роль через CmdChooseRole)
-            if (_players.Count == 1)
-            {
-                np.role        = PlayerRole.Beast;
-                np.hunterIndex = -1;
-            }
-            else
-            {
-                int nextHunterIndex = _players.Count(p => p.role == PlayerRole.Hunter && p != np);
-                np.role        = PlayerRole.Hunter;
-                np.hunterIndex = nextHunterIndex;
-            }
+            // Перше підключення — гравець обере роль самостійно в лобі
+            np.role        = PlayerRole.Unassigned;
+            np.hunterIndex = -1;
         }
 
         Debug.Log($"[Server] Player conn={conn.connectionId} → {np.role}");
         LobbyUI.Instance?.RefreshList();
 
-        // Якщо всі гравці завантажили GameScene — запускаємо гру
-        if (_expectedPlayerCount > 0 && _players.Count == _expectedPlayerCount)
-            StartCoroutine(LaunchGame());
     }
 
     public override void OnServerDisconnect(NetworkConnectionToClient conn)
     {
         var np = conn.identity?.GetComponent<NetworkPlayer>();
+
+        bool inGame = SceneManager.GetActiveScene().name == gameSceneName
+                      && GameManager.Instance != null
+                      && GameManager.Instance.state == GameState.Playing;
+
+        if (inGame && np != null)
+            HandleGameDisconnect(np);
+
         if (np != null) _players.Remove(np);
         base.OnServerDisconnect(conn);
-        LobbyUI.Instance?.RefreshList();
+        if (!inGame) LobbyUI.Instance?.RefreshList();
+    }
+
+    private void HandleGameDisconnect(NetworkPlayer np)
+    {
+        if (np.role == PlayerRole.Beast)
+        {
+            GameManager.Instance.EndGameDisconnect($"{np.nickname} (Звір) відключився.");
+            StartCoroutine(ReturnToMenuDelayed());
+            return;
+        }
+
+        if (!np.role.IsHunter()) return;
+
+        int remaining = _players.Count(p => p != np && p.role.IsHunter());
+
+        if (remaining == 0)
+        {
+            GameManager.Instance.EndGameDisconnect("Всі мисливці відключились.");
+            StartCoroutine(ReturnToMenuDelayed());
+        }
+        else
+        {
+            GameManager.Instance.NotifyDisconnect($"{np.nickname} відключився. Продовжуємо без нього.");
+            TurnManager.Instance?.MarkHunterDisconnected(np.hunterIndex);
+        }
+    }
+
+    private IEnumerator ReturnToMenuDelayed()
+    {
+        yield return new WaitForSeconds(3.5f);
+        ServerChangeScene(menuSceneName);
     }
 
     public override void OnClientConnect()
@@ -82,8 +110,26 @@ public class HuntNetworkManager : NetworkManager
 
     public override void OnClientDisconnect()
     {
+        bool inGame = SceneManager.GetActiveScene().name == gameSceneName;
         base.OnClientDisconnect();
-        if (MenuUI.Instance != null) MenuUI.Instance.OnConnectionFailed();
+
+        if (inGame)
+        {
+            if (GameHUD.Instance != null) { GameHUD.Instance.ShowEndScreen("З'єднання перервано. Повернення в меню..."); }
+            StartCoroutine(ReturnToMenuLocal());
+        }
+        else
+        {
+            if (MenuUI.Instance != null) { MenuUI.Instance.OnConnectionFailed(); }
+        }
+    }
+
+    private static readonly WaitForSeconds WaitReturn = new(3.5f);
+
+    private IEnumerator ReturnToMenuLocal()
+    {
+        yield return WaitReturn;
+        SceneManager.LoadScene(menuSceneName);
     }
 
     // Викликається на КЛІЄНТАХ після завантаження нової сцени
@@ -127,11 +173,31 @@ public class HuntNetworkManager : NetworkManager
 
     // ─── Запуск гри після завантаження сцени ─────────────────────────────────
 
+    // Fires on server after the server itself has loaded the new scene
+    public override void OnServerSceneChanged(string newSceneName)
+    {
+        base.OnServerSceneChanged(newSceneName);
+        if (newSceneName == gameSceneName && _expectedPlayerCount > 0)
+            StartCoroutine(LaunchGame());
+    }
+
     private IEnumerator LaunchGame()
     {
-        Debug.Log("[LaunchGame] Старт — чекаємо готовності клієнтів...");
+        Debug.Log($"[LaunchGame] Чекаємо {_expectedPlayerCount} гравців...");
 
-        float timeout = 5f;
+        // 1) Wait until every expected player has called AddPlayer (OnServerAddPlayer)
+        float timeout = 30f;
+        while (_players.Count < _expectedPlayerCount && timeout > 0f)
+        {
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        if (_players.Count < _expectedPlayerCount)
+            Debug.LogWarning($"[LaunchGame] Таймаут! Підключено {_players.Count}/{_expectedPlayerCount}");
+
+        // 2) Wait until every connection is marked as ready
+        timeout = 10f;
         while (timeout > 0f)
         {
             bool allReady = true;
@@ -139,16 +205,14 @@ public class HuntNetworkManager : NetworkManager
             {
                 if (!conn.isReady) { allReady = false; break; }
             }
-            if (allReady) { break; }
+            if (allReady) break;
             timeout -= Time.deltaTime;
             yield return null;
         }
 
-        Debug.Log($"[LaunchGame] Гравці готові. _players.Count = {_players.Count}");
+        Debug.Log($"[LaunchGame] Всі підключені. _players.Count={_players.Count}");
         foreach (NetworkPlayer p in _players)
-        {
             Debug.Log($"  → conn={p.connectionToClient?.connectionId} role={p.role}");
-        }
 
         _expectedPlayerCount = 0;
 
@@ -193,12 +257,10 @@ public class HuntNetworkManager : NetworkManager
         foreach (var p in _players)
             Debug.Log($"  conn={p.connectionToClient?.connectionId} role={p.role} hunterIndex={p.hunterIndex}");
 
-        // Beast player: prefer explicit Beast role, fall back to Unassigned (lobby default before role pick)
         NetworkPlayer beastPlayer = _players.FirstOrDefault(p => p.role == PlayerRole.Beast);
-        if (beastPlayer == null) beastPlayer = _players.FirstOrDefault(p => p.role == PlayerRole.Unassigned);
 
         List<NetworkPlayer> hunterPlayers = _players
-            .Where(p => p.role == PlayerRole.Hunter)
+            .Where(p => p.role.IsHunter())
             .OrderBy(p => p.hunterIndex)
             .ToList();
         Debug.Log($"[SpawnCharacters] beastPlayer={(beastPlayer != null ? beastPlayer.connectionToClient?.connectionId.ToString() : "null")} hunterPlayers.Count={hunterPlayers.Count}");
@@ -224,20 +286,22 @@ public class HuntNetworkManager : NetworkManager
             Debug.LogError("[SpawnCharacters] Список гравців порожній — не можна заспавнити Звіра!");
         }
 
-        GameObject[] prefabs = { hunterTrackerPrefab, hunterScoutPrefab, hunterArcherPrefab };
-
         // Pick unique random start nodes for each hunter
         HashSet<int> usedNodes = new();
         for (int i = 0; i < hunterPlayers.Count; i++)
         {
-            // Fall back to the first assigned hunter prefab if the role-specific one is missing
-            GameObject prefab = prefabs[Mathf.Min(i, prefabs.Length - 1)];
-            if (prefab == null)
+            NetworkPlayer hp = hunterPlayers[i];
+            GameObject prefab = hp.role switch
             {
+                PlayerRole.Tracker => hunterTrackerPrefab,
+                PlayerRole.Scout   => hunterScoutPrefab,
+                PlayerRole.Archer  => hunterArcherPrefab,
+                _                  => hunterTrackerPrefab
+            };
+            if (prefab == null)
                 prefab = hunterTrackerPrefab != null ? hunterTrackerPrefab
                        : hunterScoutPrefab   != null ? hunterScoutPrefab
                        : hunterArcherPrefab;
-            }
             if (prefab == null)
             {
                 Debug.LogError($"[SpawnCharacters] Жоден Hunter prefab не призначений в інспекторі!");
@@ -263,8 +327,13 @@ public class HuntNetworkManager : NetworkManager
 
             // Set SyncVars BEFORE NetworkServer.Spawn so they're included in the initial spawn message,
             // not sent as a late delta that can arrive after the first command.
-            ctrl.role          = (HunterRole)Mathf.Min(i, 2);  // i=0→Tracker, 1→Scout, 2→Archer
-            ctrl.hunterIndex   = i;                              // sequential turn index, never -1
+            ctrl.role = hp.role switch
+            {
+                PlayerRole.Scout  => HunterRole.Scout,
+                PlayerRole.Archer => HunterRole.Archer,
+                _                 => HunterRole.Tracker
+            };
+            ctrl.hunterIndex   = i;
             ctrl.currentNodeId = nodeId;
 
             Debug.Log($"[SpawnCharacters] currentNodeId={ctrl.currentNodeId} (перед spawn)");

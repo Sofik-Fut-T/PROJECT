@@ -21,6 +21,7 @@ public class TurnManager : NetworkBehaviour
     private List<HunterController> _hunters = new();
     private bool _beastMoved;
     private bool _beastAbilityDone;
+    private readonly HashSet<int>  _disconnectedHunters = new();
 
     private void Awake() => Instance = this;
 
@@ -40,7 +41,8 @@ public class TurnManager : NetworkBehaviour
         if (_beast != null)
         {
             _beast.BeginTurn();
-            _beast.TargetNotifyTurn(_beast.connectionToClient, _beast.ServerNodeId == -1);
+            _beast.TargetNotifyTurn(_beast.connectionToClient, _beast.ServerNodeId == -1,
+                _beast.dashCooldown, _beast.fakeCooldown, _beast.eraseCooldown);
         }
         RpcPhaseAnnounce("Хід Звіра");
     }
@@ -89,6 +91,10 @@ public class TurnManager : NetworkBehaviour
     [Server]
     private void AdvanceHunterTurn()
     {
+        // Skip over any disconnected hunters
+        while (activeHunterIndex < _hunters.Count && _disconnectedHunters.Contains(activeHunterIndex))
+            activeHunterIndex++;
+
         if (activeHunterIndex >= _hunters.Count)
         {
             GameManager.Instance.EndRound();
@@ -98,6 +104,16 @@ public class TurnManager : NetworkBehaviour
         _hunters[activeHunterIndex].BeginTurn();
         string name = LookupHunterNickname(activeHunterIndex);
         RpcPhaseAnnounce($"Хід Мисливця: {name}");
+    }
+
+    [Server]
+    public void MarkHunterDisconnected(int hunterIndex)
+    {
+        _disconnectedHunters.Add(hunterIndex);
+
+        // If it's currently this hunter's turn, skip it immediately
+        if (phase == GamePhase.HunterTurn && activeHunterIndex == hunterIndex)
+            OnHunterDone();
     }
 
     [Server]

@@ -35,4 +35,11 @@ public class ClueLogPanel : MonoBehaviour
             }
         }
     }
+
+    public void ClearAll()
+    {
+        foreach (var (_, go) in _entries)
+            Destroy(go);
+        _entries.Clear();
+    }
 }

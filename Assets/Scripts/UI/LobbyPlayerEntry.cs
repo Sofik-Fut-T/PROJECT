@@ -20,15 +20,11 @@ public class LobbyPlayerEntry : MonoBehaviour
 
         roleText.text = player.role switch
         {
-            PlayerRole.Beast  => "Звір",
-            PlayerRole.Hunter => player.hunterIndex switch
-            {
-                0 => "Слідопит",
-                1 => "Розвідник",
-                2 => "Стрілець",
-                _ => "Мисливець"
-            },
-            _ => "— не вибрано —"
+            PlayerRole.Beast   => "Звір",
+            PlayerRole.Tracker => "Слідопит",
+            PlayerRole.Scout   => "Розвідник",
+            PlayerRole.Archer  => "Стрілець",
+            _                  => "— не вибрано —"
         };
 
         roleText.color = player.role == PlayerRole.Unassigned

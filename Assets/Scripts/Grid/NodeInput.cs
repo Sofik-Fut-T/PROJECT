@@ -4,7 +4,7 @@ public class NodeInput : MonoBehaviour
 {
     public static NodeInput Instance { get; private set; }
 
-    public enum InputMode { Move, CheckCell, SpecialAbility }
+    public enum InputMode { Move, Dash, CheckCell, SpecialAbility }
     public InputMode currentMode = InputMode.Move;
 
     private int _nodesLayerMask;
@@ -78,8 +78,17 @@ public class NodeInput : MonoBehaviour
     {
         if (_beast != null && _beast.isOwned)
         {
-            Debug.Log($"[NodeInput] → CmdMove({nodeId}) як Звір");
-            _beast.CmdMove(nodeId);
+            if (currentMode == InputMode.Dash)
+            {
+                Debug.Log($"[NodeInput] → CmdDash({nodeId}) як Звір");
+                _beast.CmdDash(nodeId);
+                currentMode = InputMode.Move;
+            }
+            else
+            {
+                Debug.Log($"[NodeInput] → CmdMove({nodeId}) як Звір");
+                _beast.CmdMove(nodeId);
+            }
             return;
         }
 

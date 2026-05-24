@@ -4,11 +4,14 @@ using System.Collections.Generic;
 [ExecuteInEditMode]
 public class MapNode : MonoBehaviour
 {
-    [Header("Логіка зв'язків")]
+    [Header("Node Settings")]
     public float checkRadius = 5f;
     public List<MapNode> neighbors = new List<MapNode>();
 
-    // Кнопка для оновлення (ПКМ по назві скрипта -> Update Neighbors)
+    [Header("Zone")]
+    [SerializeField] public string zone;
+
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ -> Update Neighbors)
     [ContextMenu("Update Neighbors")]
     public void UpdateNeighbors()
     {
@@ -17,7 +20,7 @@ public class MapNode : MonoBehaviour
 
         foreach (MapNode node in allNodes)
         {
-            // Ігноруємо себе та об'єкти, яких немає на сцені
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ'пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
             if (node == this || node.gameObject.scene.name == null) continue;
 
             float distance = Vector3.Distance(transform.position, node.transform.position);
@@ -38,5 +41,9 @@ public class MapNode : MonoBehaviour
         }
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, 0.2f);
+#if UNITY_EDITOR
+        if (!string.IsNullOrEmpty(zone))
+            UnityEditor.Handles.Label(transform.position + Vector3.up * 0.4f, zone);
+#endif
     }
 }

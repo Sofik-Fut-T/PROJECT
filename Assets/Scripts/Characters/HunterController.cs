@@ -9,12 +9,16 @@ public class HunterController : CharacterBase
 
     [SyncVar] public HunterRole role;
     [SyncVar] public int        hunterIndex;
-    [SyncVar] public int        specialCooldown;
+    [SyncVar(hook = nameof(OnSpecialCDSync))] public int specialCooldown;
+
+    private void OnSpecialCDSync(int _, int val)
+    {
+        if (isOwned && AbilityPanel.Instance != null) { AbilityPanel.Instance.RefreshHunterCooldown(val); }
+    }
 
     [SerializeField] private Transform  currentNodeTransform;
     [SerializeField] private GameObject localPlayerIndicatorPrefab;
 
-    private int  _specialCD;
     private bool _movedThisTurn;
     private bool _actedThisTurn;
 
@@ -70,10 +74,10 @@ public class HunterController : CharacterBase
     public void CmdUseSpecial(int targetNodeId)
     {
         if (!TurnManager.Instance.IsHunterTurn(hunterIndex)) return;
-        if (_actedThisTurn || _specialCD > 0) return;
+        if (_actedThisTurn || specialCooldown > 0) return;
 
         _actedThisTurn = true;
-        _specialCD = 3; specialCooldown = 3;
+        specialCooldown = 3;
 
         switch (role)
         {
@@ -82,9 +86,8 @@ public class HunterController : CharacterBase
                     GameManager.Instance.CurrentRound);
                 break;
             case HunterRole.Scout:
-                _movedThisTurn = false; // extra move
+                _movedThisTurn = false;
                 _actedThisTurn = false;
-                _specialCD = 3; specialCooldown = 3;
                 return;
             case HunterRole.Archer:
                 bool hit = IsBeastHere(targetNodeId);
@@ -109,8 +112,8 @@ public class HunterController : CharacterBase
     {
         _movedThisTurn = false;
         _actedThisTurn = false;
-        if (_specialCD > 0) { _specialCD--; specialCooldown = _specialCD; }
-        TargetNotifyTurn(connectionToClient);
+        if (specialCooldown > 0) specialCooldown--;
+        TargetNotifyTurn(connectionToClient, specialCooldown);
     }
 
     [Server]
@@ -121,10 +124,10 @@ public class HunterController : CharacterBase
     }
 
     [TargetRpc]
-    private void TargetNotifyTurn(NetworkConnectionToClient target)
+    private void TargetNotifyTurn(NetworkConnectionToClient target, int sc)
     {
-        GameHUD.Instance?.SetPhaseText("Твій хід, Мисливцю!");
-        AbilityPanel.Instance?.RefreshHunter(this);
+        if (GameHUD.Instance != null) GameHUD.Instance.SetPhaseText("Твій хід, Мисливцю!");
+        if (AbilityPanel.Instance != null) AbilityPanel.Instance.RefreshHunter(this, sc);
     }
 
     [TargetRpc]

@@ -1,7 +1,13 @@
 using Mirror;
 using UnityEngine;
 
-public enum PlayerRole { Unassigned, Beast, Hunter }
+public enum PlayerRole { Unassigned, Beast, Tracker, Scout, Archer }
+
+public static class PlayerRoleExt
+{
+    public static bool IsHunter(this PlayerRole r) =>
+        r == PlayerRole.Tracker || r == PlayerRole.Scout || r == PlayerRole.Archer;
+}
 
 // One NetworkPlayer per connected client. Lives for the whole session.
 public class NetworkPlayer : NetworkBehaviour
@@ -33,21 +39,23 @@ public class NetworkPlayer : NetworkBehaviour
     [Command]
     public void CmdChooseRole(PlayerRole chosen)
     {
-        // Beast: only one allowed
-        if (chosen == PlayerRole.Beast)
+        if (chosen == PlayerRole.Unassigned)
         {
-            var all = FindObjectsOfType<NetworkPlayer>();
-            foreach (var p in all)
-                if (p != this && p.role == PlayerRole.Beast) return; // taken
+            role        = PlayerRole.Unassigned;
+            hunterIndex = -1;
+            return;
         }
 
-        // Assign hunter index if becoming hunter
-        if (chosen == PlayerRole.Hunter)
+        // Every specific role is exclusive — check if someone else already holds it
+        var all = FindObjectsOfType<NetworkPlayer>();
+        foreach (var p in all)
+            if (p != this && p.role == chosen) return;
+
+        if (chosen.IsHunter())
         {
             int nextIndex = 0;
-            var all = FindObjectsOfType<NetworkPlayer>();
             foreach (var p in all)
-                if (p != this && p.role == PlayerRole.Hunter && p.hunterIndex >= nextIndex)
+                if (p != this && p.role.IsHunter() && p.hunterIndex >= nextIndex)
                     nextIndex = p.hunterIndex + 1;
             hunterIndex = nextIndex;
         }

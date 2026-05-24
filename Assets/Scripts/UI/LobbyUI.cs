@@ -20,6 +20,7 @@ public class LobbyUI : MonoBehaviour
     public Button btnTracker;
     public Button btnScout;
     public Button btnArcher;
+    public Button btnUnassign;
 
     [Header("Host Controls")]
     public Button          startButton;
@@ -37,10 +38,11 @@ public class LobbyUI : MonoBehaviour
         if (lobbyPanel != null)  lobbyPanel.SetActive(false);
         if (startButton != null) startButton.gameObject.SetActive(false);
 
-        btnBeast?.onClick.AddListener(   () => ChooseRole(PlayerRole.Beast));
-        btnTracker?.onClick.AddListener( () => ChooseRole(PlayerRole.Hunter));
-        btnScout?.onClick.AddListener(   () => ChooseRole(PlayerRole.Hunter));
-        btnArcher?.onClick.AddListener(  () => ChooseRole(PlayerRole.Hunter));
+        btnBeast?.onClick.AddListener(    () => ChooseRole(PlayerRole.Beast));
+        btnTracker?.onClick.AddListener(  () => ChooseRole(PlayerRole.Tracker));
+        btnScout?.onClick.AddListener(    () => ChooseRole(PlayerRole.Scout));
+        btnArcher?.onClick.AddListener(   () => ChooseRole(PlayerRole.Archer));
+        btnUnassign?.onClick.AddListener( () => ChooseRole(PlayerRole.Unassigned));
         startButton?.onClick.AddListener(OnStartGame);
     }
 
@@ -99,7 +101,34 @@ public class LobbyUI : MonoBehaviour
             _entries.Add(go);
         }
 
+        UpdateRoleButtons(players);
         UpdateStartButton(players);
+    }
+
+    private void UpdateRoleButtons(NetworkPlayer[] players)
+    {
+        bool beastTaken   = false;
+        bool trackerTaken = false;
+        bool scoutTaken   = false;
+        bool archerTaken  = false;
+
+        PlayerRole myRole = NetworkPlayer.Local != null
+            ? NetworkPlayer.Local.role
+            : PlayerRole.Unassigned;
+
+        foreach (var p in players)
+        {
+            if (p.role == PlayerRole.Beast)   beastTaken   = true;
+            if (p.role == PlayerRole.Tracker) trackerTaken = true;
+            if (p.role == PlayerRole.Scout)   scoutTaken   = true;
+            if (p.role == PlayerRole.Archer)  archerTaken  = true;
+        }
+
+        if (btnBeast    != null) btnBeast.interactable    = !beastTaken;
+        if (btnTracker  != null) btnTracker.interactable  = !trackerTaken;
+        if (btnScout    != null) btnScout.interactable    = !scoutTaken;
+        if (btnArcher   != null) btnArcher.interactable   = !archerTaken;
+        if (btnUnassign != null) btnUnassign.interactable = myRole != PlayerRole.Unassigned;
     }
 
     private void UpdateStartButton(NetworkPlayer[] players)

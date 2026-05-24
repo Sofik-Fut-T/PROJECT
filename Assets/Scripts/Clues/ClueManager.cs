@@ -6,7 +6,17 @@ public class ClueManager : NetworkBehaviour
 {
     public static ClueManager Instance { get; private set; }
 
+    [Header("Light Effect")]
+    public GameObject lightPrefab;
+    public float      lightYOffset = 1.5f;
+
     private readonly List<ClueData> _history = new();
+
+    // Server-side: how many remaining rounds to suppress the light after Erase
+    private int _lightSkipRounds;
+
+    // Client-side: the locally instantiated light object
+    private GameObject _currentLight;
 
     private void Awake() => Instance = this;
 
@@ -15,24 +25,43 @@ public class ClueManager : NetworkBehaviour
     [Server]
     public void GenerateAndSend(int beastNodeId, int round)
     {
-        var ng  = GridManager.Instance;
-        Vector3 pos = ng.NodeToWorld(beastNodeId);
-
-        ClueType[] pool = { ClueType.SameRow, ClueType.SameColumn, ClueType.Zone };
-        var type = pool[Random.Range(0, pool.Length)];
+        MapNode node = GridManager.Instance.GetNode(beastNodeId);
+        string zone = (node != null && !string.IsNullOrEmpty(node.zone)) ? node.zone : null;
 
         var clue = new ClueData
         {
-            type         = type,
-            round        = round,
-            lineValue    = type == ClueType.SameRow ? pos.z : pos.x,
-            centerNodeId = beastNodeId,
-            zoneRadius   = 2.5f,
-            isFake       = false
+            type     = ClueType.Zone,
+            round    = round,
+            zoneName = zone,
+            isFake   = false
         };
 
         _history.Add(clue);
         RpcReceiveClue(clue);
+
+        // Spawn directional light from round 6 onward
+        if (round >= 4)
+        {
+            if (_lightSkipRounds > 0)
+            {
+                _lightSkipRounds--;
+                RpcDespawnLight();
+            }
+            else
+            {
+                Vector3 beastPos = GridManager.Instance.NodeToWorld(beastNodeId);
+                float radius = round < 12
+                    ? 15f
+                    : Mathf.Lerp(12f, 1f, (round - 12f) / 3f);
+
+                Vector3 lightPos = new Vector3(
+                    beastPos.x + Random.Range(-radius, radius),
+                    beastPos.y + lightYOffset,
+                    beastPos.z + Random.Range(-radius, radius));
+
+                RpcSpawnLight(lightPos);
+            }
+        }
     }
 
     [Server]
@@ -49,18 +78,12 @@ public class ClueManager : NetworkBehaviour
     }
 
     [Server]
-    public void EraseLastClue()
+    public void EraseAllClues()
     {
-        for (int i = _history.Count - 1; i >= 0; i--)
-        {
-            if (!_history[i].isFake)
-            {
-                int round = _history[i].round;
-                _history.RemoveAt(i);
-                RpcEraseClue(round);
-                return;
-            }
-        }
+        _history.Clear();
+        _lightSkipRounds = 2;
+        RpcClearAll();
+        RpcDespawnLight();
     }
 
     [Server]
@@ -69,13 +92,15 @@ public class ClueManager : NetworkBehaviour
         var beast = FindFirstObjectByType<BeastController>();
         if (beast == null) return;
 
+        MapNode node = GridManager.Instance.GetNode(beast.ServerNodeId);
+        string zone = (node != null && !string.IsNullOrEmpty(node.zone)) ? node.zone : null;
+
         var clue = new ClueData
         {
-            type         = ClueType.Zone,
-            round        = round,
-            centerNodeId = beast.ServerNodeId,
-            zoneRadius   = 0f,   // exact node only
-            isFake       = false
+            type     = ClueType.Zone,
+            round    = round,
+            zoneName = zone,
+            isFake   = false
         };
         TargetPreciseClue(target, clue);
     }
@@ -83,48 +108,30 @@ public class ClueManager : NetworkBehaviour
     // ─── RPCs ─────────────────────────────────────────────────────────────────
 
     [ClientRpc]
-    private void RpcReceiveClue(ClueData clue)
+    private void RpcReceiveClue(ClueData clue) => ClueLogPanel.Instance?.AddEntry(clue);
+
+    [ClientRpc]
+    private void RpcClearAll() => ClueLogPanel.Instance?.ClearAll();
+
+    [ClientRpc]
+    private void RpcSpawnLight(Vector3 pos)
     {
-        ClueLogPanel.Instance?.AddEntry(clue);
-        HighlightClue(clue);
+        if (_currentLight != null) Destroy(_currentLight);
+        if (lightPrefab != null)
+            _currentLight = Instantiate(lightPrefab, pos, Quaternion.identity);
     }
 
     [ClientRpc]
-    private void RpcEraseClue(int round)
+    private void RpcDespawnLight()
     {
-        ClueLogPanel.Instance?.RemoveEntry(round);
-        GridManager.Instance?.ClearHighlights();
+        if (_currentLight != null)
+        {
+            Destroy(_currentLight);
+            _currentLight = null;
+        }
     }
 
     [TargetRpc]
-    private void TargetPreciseClue(NetworkConnectionToClient target, ClueData clue)
-    {
+    private void TargetPreciseClue(NetworkConnectionToClient target, ClueData clue) =>
         ClueLogPanel.Instance?.AddEntry(clue);
-        GridManager.Instance?.HighlightNode(clue.centerNodeId, CellHighlight.Clue);
-    }
-
-    // ─── Highlight helpers ────────────────────────────────────────────────────
-
-    private static void HighlightClue(ClueData clue)
-    {
-        var ng = GridManager.Instance;
-        if (ng == null) return;
-
-        List<int> nodes;
-        switch (clue.type)
-        {
-            case ClueType.SameRow:
-                nodes = ng.GetNodesInRow(clue.lineValue);
-                break;
-            case ClueType.SameColumn:
-                nodes = ng.GetNodesInColumn(clue.lineValue);
-                break;
-            case ClueType.Zone:
-                nodes = ng.GetNodesInZone(clue.centerNodeId, clue.zoneRadius);
-                break;
-            default:
-                return;
-        }
-        ng.HighlightNodes(nodes, CellHighlight.Clue);
-    }
 }

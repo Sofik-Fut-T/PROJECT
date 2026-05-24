@@ -13,7 +13,7 @@ public class GameManager : NetworkBehaviour
     public int CurrentRound => currentRound;
 
     [Header("Settings")]
-    public int maxRounds = 12;
+    [SyncVar] public int maxRounds = 15;
 
     private void Awake() => Instance = this;
 
@@ -49,11 +49,26 @@ public class GameManager : NetworkBehaviour
         RpcEndScreen($"Звір втік! Вижив {maxRounds} раундів.");
     }
 
+    [Server]
+    public void EndGameDisconnect(string reason)
+    {
+        if (state != GameState.Playing) return;
+        state = GameState.BeastWin;
+        RpcEndScreen(reason);
+    }
+
+    [Server]
+    public void NotifyDisconnect(string message) => RpcShowNotification(message);
+
     // ─── RPCs ────────────────────────────────────────────────────────────────
 
     [ClientRpc]
     private void RpcEndScreen(string message) =>
         GameHUD.Instance?.ShowEndScreen(message);
+
+    [ClientRpc]
+    private void RpcShowNotification(string message) =>
+        GameHUD.Instance?.ShowNotification(message, 4f);
 
     // ─── Hooks ───────────────────────────────────────────────────────────────
 

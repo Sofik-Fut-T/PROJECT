@@ -10,11 +10,25 @@ public class BeastController : CharacterBase
     [SerializeField] private Transform  currentNodeTransform;
     [SerializeField] private GameObject localPlayerIndicatorPrefab;
 
-    private int  _dashCD, _fakeCD, _eraseCD;
     private bool _movedThisTurn;
-    [SyncVar] public int dashCooldown;
-    [SyncVar] public int fakeCooldown;
-    [SyncVar] public int eraseCooldown;
+    [SyncVar(hook = nameof(OnDashCDSync))]  public int dashCooldown;
+    [SyncVar(hook = nameof(OnFakeCDSync))]  public int fakeCooldown;
+    [SyncVar(hook = nameof(OnEraseCDSync))] public int eraseCooldown;
+
+    private void OnDashCDSync(int _, int val)
+    {
+        if (isOwned && AbilityPanel.Instance != null) { AbilityPanel.Instance.RefreshBeastCooldown(val, 0); }
+    }
+
+    private void OnFakeCDSync(int _, int val)
+    {
+        if (isOwned && AbilityPanel.Instance != null) { AbilityPanel.Instance.RefreshBeastCooldown(val, 1); }
+    }
+
+    private void OnEraseCDSync(int _, int val)
+    {
+        if (isOwned && AbilityPanel.Instance != null) { AbilityPanel.Instance.RefreshBeastCooldown(val, 2); }
+    }
 
     public override void OnStartClient()
     {
@@ -77,22 +91,22 @@ public class BeastController : CharacterBase
     [Command]
     public void CmdDash(int targetNodeId)
     {
-        if (_dashCD > 0 || !TurnManager.Instance.IsBeastTurn) return;
-        // Dash: 2 hops away — check that target is a neighbor of a neighbor
+        if (dashCooldown > 0 || !TurnManager.Instance.IsBeastTurn) return;
+        if (_movedThisTurn) return;
         if (!IsTwoHopsAway(_serverNodeId, targetNodeId)) return;
 
         _movedThisTurn = true;
-        _dashCD = 3; dashCooldown = 3;
+        dashCooldown = 3;
         SetNodeId(targetNodeId);
         RpcSetPosition(GridManager.Instance.NodeToWorld(targetNodeId));
-        TurnManager.Instance.OnBeastMoved(this);   // dash counts as the beast's move
+        TurnManager.Instance.OnBeastMoved(this);
     }
 
     [Command]
     public void CmdFakeTrail()
     {
-        if (_fakeCD > 0 || !TurnManager.Instance.IsBeastTurn) return;
-        _fakeCD = 3; fakeCooldown = 3;
+        if (fakeCooldown > 0 || !TurnManager.Instance.IsBeastTurn) return;
+        fakeCooldown = 3;
         ClueManager.Instance.SpawnFakeClue();
         TurnManager.Instance.OnBeastUsedAbility();
     }
@@ -100,9 +114,9 @@ public class BeastController : CharacterBase
     [Command]
     public void CmdErase()
     {
-        if (_eraseCD > 0 || !TurnManager.Instance.IsBeastTurn) return;
-        _eraseCD = 3; eraseCooldown = 3;
-        ClueManager.Instance.EraseLastClue();
+        if (eraseCooldown > 0 || !TurnManager.Instance.IsBeastTurn) return;
+        eraseCooldown = 3;
+        ClueManager.Instance.EraseAllClues();
         TurnManager.Instance.OnBeastUsedAbility();
     }
 
@@ -137,18 +151,20 @@ public class BeastController : CharacterBase
     }
 
     [TargetRpc]
-    public void TargetNotifyTurn(NetworkConnectionToClient target, bool isFirstPlacement)
+    public void TargetNotifyTurn(NetworkConnectionToClient target, bool isFirstPlacement, int dc, int fc, int ec)
     {
-        GameHUD.Instance?.SetPhaseText(isFirstPlacement ? "Оберіть початкову позицію!" : "Твій хід, Звіре!");
-        AbilityPanel.Instance?.RefreshBeast(this);
+        if (GameHUD.Instance != null)
+            GameHUD.Instance.SetPhaseText(isFirstPlacement ? "Оберіть початкову позицію!" : "Твій хід, Звіре!");
+        if (AbilityPanel.Instance != null)
+            AbilityPanel.Instance.RefreshBeast(this, dc, fc, ec);
     }
 
     [Server]
     public void TickCooldowns()
     {
-        if (_dashCD > 0) { _dashCD--;  dashCooldown  = _dashCD;  }
-        if (_fakeCD > 0) { _fakeCD--;  fakeCooldown  = _fakeCD;  }
-        if (_eraseCD > 0){ _eraseCD--; eraseCooldown = _eraseCD; }
+        if (dashCooldown  > 0) dashCooldown--;
+        if (fakeCooldown  > 0) fakeCooldown--;
+        if (eraseCooldown > 0) eraseCooldown--;
     }
 
     private void SetNodeId(int nodeId)
