@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u0420\u043E\u043B\u044C \u0413\u0440\u0430\u0432\u0446\u044F"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6add8e9238e2aef4ca6e3ec76205ddcd, type: 2}
+  m_sharedMaterial: {fileID: 5123876855221511934, guid: 6add8e9238e2aef4ca6e3ec76205ddcd, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -230,8 +230,8 @@ MonoBehaviour:
   nicknameText: {fileID: 4000720495913618444}
   roleText: {fileID: 5104225639045150089}
   background: {fileID: 5950168879119414898}
-  selfColor: {r: 0.2, g: 0.5, b: 1, a: 0.3}
-  otherColor: {r: 1, g: 1, b: 1, a: 0.3}
+  selfColor: {r: 0.25792086, g: 0.4554074, b: 0.78113204, a: 0.40392157}
+  otherColor: {r: 1, g: 1, b: 1, a: 0.44313726}
 --- !u!1 &7993363261706893274
 GameObject:
   m_ObjectHideFlags: 0
@@ -299,8 +299,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041D\u0456\u043A\u043D\u0435\u0439\u043C \u0413\u0440\u0430\u0432\u0446\u044F"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 6add8e9238e2aef4ca6e3ec76205ddcd, type: 2}
+  m_sharedMaterial: {fileID: 5123876855221511934, guid: 6add8e9238e2aef4ca6e3ec76205ddcd, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

@@ -108,4 +108,10 @@ public class MenuUI : MonoBehaviour
         catch { /* ignore */ }
         return "127.0.0.1";
     }
+
+    //just exit methid
+    public void GameExit()
+    {
+        Application.Quit();
+    }
 }
